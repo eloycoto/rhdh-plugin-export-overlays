@@ -1,0 +1,54 @@
+name: Publish X2A to Custom Registry
+
+on:
+  # Trigger manually
+  workflow_dispatch:
+    inputs:
+      registry:
+        description: 'Container registry URL (e.g., quay.io, docker.io)'
+        required: true
+        type: string
+      repository-prefix:
+        description: 'Repository prefix (e.g., myorg/rhdh-plugins)'
+        required: true
+        type: string
+      registry-username:
+        description: 'Registry username (optional, uses secrets if not provided)'
+        required: false
+        type: string
+        default: ''
+
+  # Optional: Trigger on push to specific branch
+  push:
+    branches:
+      - 'x2a-releases/**'
+    paths:
+      - 'workspaces/x2a/**'
+
+jobs:
+  publish-x2a:
+    name: Publish X2A Dynamic Plugins
+    uses: redhat-developer/rhdh-plugin-export-utils/.github/workflows/export-workspaces-as-dynamic.yaml@main
+
+    with:
+      workspace-path: 'workspaces/x2a'
+      publish-container: true
+
+      # Custom registry configuration
+      image-repository-prefix: ${{ format('{0}/{1}', inputs.registry || 'quay.io', inputs.repository-prefix || 'myorg/rhdh-plugins') }}
+
+      # Use custom username or fall back to github actor
+      image-registry-user: ${{ inputs.registry-username || github.actor }}
+
+      # Optional: Add custom tag prefix
+      image-tag-prefix: 'x2a__'
+
+    secrets:
+      # Use custom registry token/password
+      image-registry-password: ${{ secrets.CUSTOM_REGISTRY_TOKEN || secrets.CUSTOM_REGISTRY_PASSWORD }}
+
+    permissions:
+      contents: write
+      attestations: write
+      packages: write
+      id-token: write
