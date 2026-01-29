@@ -1,0 +1,39 @@
+name: Publish X2A to Custom Registry
+
+on:
+  # Trigger manually
+  workflow_dispatch:
+    inputs:
+      image-registry-user:
+        description: 'Registry username'
+        required: false
+        type: string
+        default: 'x2ansible+rhdhplugins'
+
+  # Trigger on push to specific branch
+  push:
+    branches:
+      - 'x2a-releases/**'
+    paths:
+      - 'workspaces/x2a/**'
+
+jobs:
+  publish-x2a:
+    name: Publish X2A Dynamic Plugins
+    uses: redhat-developer/rhdh-plugin-export-utils/.github/workflows/export-workspaces-as-dynamic.yaml@main
+
+    with:
+      workspace-path: 'workspaces/x2a'
+      publish-container: true
+      image-repository-prefix: "quay.io/x2ansible"
+      image-registry-user: ${{ inputs.image-registry-user }}
+      image-tag-prefix: 'x2a__'
+
+    secrets:
+      image-registry-password: ${{ secrets.CUSTOM_REGISTRY_TOKEN }}
+
+    permissions:
+      contents: write
+      attestations: write
+      packages: write
+      id-token: write
